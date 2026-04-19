@@ -1,7 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import joblib
+import pickle
 
 
 filepath = r"C:\Users\HAI\OneDrive\Desktop\machine learning pratice\machine learning pratice folder\ml_pratice\df.csv"
@@ -114,7 +114,9 @@ class featureScaling:
             
             grid_search = GridSearchCV(pipe,grid,cv=5,n_jobs=-1,verbose=2,scoring='r2')
             grid_search.fit(x_train,y_train)
-            predict_y = grid_search.predict(x_test)  
+            predict_y = grid_search.predict(x_test)
+            with open('best_model.pkl', 'wb') as f:
+                pickle.dump(grid_search.best_estimator_, f)
             return grid_search,predict_y,y_test
         except Exception as e:
             print('Not Sucessfully Scaling',e)
@@ -143,53 +145,16 @@ object = load_data(filepath)
 loaded = object.load() 
 preprocessing_loaded = Prepocessing(loaded)
 df,check_null_values,check_numarical_values,check_cetagorical_columns  = preprocessing_loaded.analysis()
+print("Data table information:+++++++++++++++++++++",df.info())
 feature_scaling = featureScaling(df)
 grid_search,predict_y,y_test = feature_scaling.scaling()
 evalution_model_mextrics = evalution(grid_search,predict_y,y_test)
-result = evalution_model_mextrics.model_evelation()
-
-joblib.dump(grid_search.best_estimator_,"Model.pkl")
-
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-import uvicorn
-app = FastAPI()
+r2,mae,mse = evalution_model_mextrics.model_evelation()
+print(f"R2 Score: {r2}")
+print(f"Mean Absolute Error: {mae}")
+print(f"Mean Squared Error: {mse}")
 
 
-@app.on_event("startup")
-def load_model():
-    global input_model
-    input_model = joblib.load("Model.pkl")
-
-class InputData(BaseModel):
-    def name_def():
-        Company:str
-        TypeName:str
-        Ram:float
-        Weight:float
-        Touchscreen:int
-        Ips:int
-        ppi:float
-        Cpu_brand:str
-        HDD:int
-        SSD:int
-        Gpu_brand:str
-        os:str
-        
-        
-@app.post('/predict')
-def model_predict(data:InputData):
-    try:
-        input_data = [[data.Company,data.TypeName,data.Ram,data.Weight,data.Touchscreen,data.Ips,data.ppi,data.Cpu_brand,data.HDD,data.SSD,data.Gpu_brand,data.os]]
-        prediction = input_model.predict(input_data)
-        return {"predicted_price": prediction[0]}
-    except Exception as e:
-        return {"error": str(e)}
-    
-if __name__ == "__main__":
-    uvicorn.run(app,port=8000)           
-        
         
 
     
