@@ -2,7 +2,7 @@ name: CI/CD Pipline build
 
 on:
   push:
-    branchs:
+    branches:
       - main
 
 
@@ -11,28 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
-        uses: actions/checkout@v6 
+        uses: actions/checkout@v3 
 
       - name: Docker Login
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build and Push Docker Image
-        runs: |
+        run: |
           docker build -t ${{secrets.DOCKERHUB_USERNAME}}/laptop-app:latest .  
           docker push ${{secrets.DOCKERHUB_USERNAME}}/laptop-app:latest
 
       - name: Deploy on EC2 instance server
-        users: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }} 
-          username: ubuntu-latest
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker pull ${{secrets.DOCKERHUB_USERNAME}}/laptop-app:latest
-            docker stop latop-price || true
+            docker stop laptop-price || true
             docker rm laptop-price || true
             docker run -d -p 8005:8005 --name laptop-price ${{secrets.DOCKERHUB_USERNAME}}/laptop-app:latest   
        
